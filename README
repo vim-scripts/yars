@@ -1,0 +1,12 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=4281
+
+Add support:
+* ".. code-block::"
+* ".. math::"
+* ".. graphviz::"
+* rst list syntax
+
+PS: I already send a patch to the maintainer, didn't get response yet.  Maybe in the future, official syntax would contain my patch.  Anyway I released it as a plugin, since maybe someone would need this.  If you have any problem, contact me by e-mail.
+
+This plugin contains some codes from vimscript #4112. This is a good plugin, though it does not fit my taste.
+
