@@ -3,7 +3,7 @@
 "                   Base on $VIMRUNTIME/syntax/rst.vim
 " Maintainer:       Mizuchi <ytj000@gmail.com>
 " Contributor:      Nikolai Weibull <now@bitwi.se>
-" Latest Revision:  2012-10-22
+" Latest Revision:  2012-11-02
 
 if exists("b:current_syntax")
   finish
@@ -141,6 +141,68 @@ syn match   rstStandaloneHyperlink  contains=@NoSpell
 " though.
 syn sync minlines=50 linebreaks=1
 
+syn region rstCodeBlock contained matchgroup=rstDirective
+      \ start=+\%(sourcecode\|code\%(-block\)\=\)::\s+
+      \ skip=+^$+
+      \ end=+^\s\@!+ 
+      \ contains=@NoSpell
+syn cluster rstDirectives add=rstCodeBlock
+
+if !exists('g:rst_syntax_code_list')
+    let g:rst_syntax_code_list = ['vim', 'java', 'cpp', 'lisp', 'php', 'python', 'perl']
+endif
+
+for code in g:rst_syntax_code_list
+    unlet! b:current_syntax
+    exe 'syn include @rst'.code.' syntax/'.code.'.vim'
+    exe 'syn region rstDirective'.code.' matchgroup=rstDirective fold '
+                \.'start=#\%(sourcecode\|code\%(-block\)\=\)::\s\+'.code.'\s*$# '
+                \.'skip=#^$# '
+                \.'end=#^\s\@!# contains=@NoSpell,@rst'.code
+    exe 'syn cluster rstDirectives add=rstDirective'.code
+endfor
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" .. math:: support
+unlet! b:current_syntax
+syn include @rstMath syntax/plaintex.vim
+syn region rstDirectiveMath matchgroup=rstDirective fold 
+    \ start='math::\s*$'
+    \ skip='^$'
+    \ end='^\s\@!'
+    \ contains=@NoSpell, @rstMath
+syn cluster rstDirectives add=rstDirectiveMath
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" .. graphviz:: support
+unlet! b:current_syntax
+syn include @rstDot syntax/dot.vim
+syn region rstDirectiveDot matchgroup=rstDirective fold 
+    \ start='\%(graphviz\|digraph\)::\s*\w*\s*$'
+    \ skip='^$'
+    \ end='^\s\@!' 
+    \ contains=@NoSpell, @rstDot
+syn cluster rstDirectives add=rstDirectiveDot
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" List syntax. 
+" extract from riv.vim <http://www.vim.org/scripts/script.php?script_id=4112>
+syn match rstDefinitionList `\v^(\s*)\h[^:]*\ze%(\s:\s.*)*\n\1\s+\S`
+syn match rstBulletList `\v^\s*[-*+]\ze\s+`
+syn match rstEnumeratedList `\v\c^\s*%(\d+|[#a-z]|[imlcxvd]+)[.)]\ze\s+`
+syn match rstEnumeratedList `\v\c^\s*\(%(\d+|[#a-z]|[imlcxvd]+)\)\ze\s+`
+syn match rstOptionList `\v^\s*%(-\w%( \w+)=|--[[:alnum:]_-]+%(\=\w+)=|/\u)%(, %(-\w%( \w+)=|--[[:alnum:]_.-]+%(\=\w+)=|/\u))*%(  |\t)\ze\s*\S`
+syn match rstFieldList `\v^\s*:[^:[:space:]][^:]+:\_s`
+syn match rstBibliographicField `\v^\s*:(Author|Authors|Organization|Contact|Address|Version|Status|Date|Copyright|Dedication|Abstract):\_s`
+
+hi def link rstDefinitionList               Statement
+hi def link rstBulletList                   Function
+hi def link rstEnumeratedList               Function
+hi def link rstOptionList                   Statement
+hi def link rstFieldList                    Function
+hi def link rstBibliographicField           Constant
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 hi def link rstTodo                         Todo
 hi def link rstComment                      Comment
 hi def link rstSections                     Title
@@ -170,66 +232,7 @@ hi def link rstFootnoteReference            Identifier
 hi def link rstCitationReference            Identifier
 hi def link rstHyperLinkReference           Identifier
 hi def link rstStandaloneHyperlink          Identifier
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" If no rule matches, treat code-block as a string.
-execute 'syn region rstCodeBlock contained matchgroup=rstDirective' .
-      \ ' start=+\%(sourcecode\|code\%(-block\)\=\)::\s+' .
-      \ ' skip=+^$+' .
-      \ ' end=+^\s\@!+ contains=@NoSpell'
-
-syn cluster rstDirectives add=rstCodeBlock
-hi def link rstCodeBlock String
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" .. code-block:: language
-if !exists('g:rst_syntax_code_list')
-    " XXX: user could change this list in .vimrc. For unknown reason,
-    " "objcpp", "objc", "cpp", "c" and "cuda" do not compatible with each
-    " other. Only one could appear in the list. Otherwise none of them work.
-    " Don't add "rst" in the list.
-    let g:rst_syntax_code_list=['vim', 'java', 'cpp', 'lisp', 'php', 'python', 'perl']
-endif
-
-for code in g:rst_syntax_code_list
-    unlet! b:current_syntax
-    exe "syn include @rst_".code." syntax/".code.".vim"
-    exe 'syn region rstDirective_'.code.' matchgroup=rstDirective fold '
-                \.'start=#\%(sourcecode\|code\%(-block\)\=\)::\s\+'.code.'\s*$# '
-                \.'skip=#^$# '
-                \.'end=#^\s\@!# contains=@NoSpell,@rst_'.code
-    exe 'syn cluster rstDirectives add=rstDirective_'.code
-endfor
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" .. math:: support
-unlet! b:current_syntax
-syn include @rst_math syntax/plaintex.vim
-syn region rstDirective_math matchgroup=rstDirective fold 
-    \ start='math::\s*$' skip='^$' end='^\s\@!' contains=@NoSpell, @rst_math
-syn cluster rstDirectives add=rstDirective_math
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" List syntax. 
-" extract from riv.vim <http://www.vim.org/scripts/script.php?script_id=4112>
-syn match rstDefinitionList `\v^(\s*)\h[^:]*\ze%(\s:\s.*)*\n\1\s+\S`
-syn match rstBulletList `\v^\s*[-*+]\ze\s+`
-syn match rstEnumeratedList `\v\c^\s*%(\d+|[#a-z]|[imlcxvd]+)[.)]\ze\s+`
-syn match rstEnumeratedList `\v\c^\s*\(%(\d+|[#a-z]|[imlcxvd]+)\)\ze\s+`
-syn match rstOptionList `\v^\s*%(-\w%( \w+)=|--[[:alnum:]_-]+%(\=\w+)=|/\u)%(, %(-\w%( \w+)=|--[[:alnum:]_.-]+%(\=\w+)=|/\u))*%(  |\t)\ze\s*\S`
-syn match rstFieldList `\v^\s*:[^:[:space:]][^:]+:\_s`
-syn match rstBibliographicField `\v^\s*:(Author|Authors|Organization|Contact|Address|Version|Status|Date|Copyright|Dedication|Abstract):\_s`
-
-hi def link rstDefinitionList               Statement
-hi def link rstBulletList                   Function
-hi def link rstEnumeratedList               Function
-hi def link rstOptionList                   Statement
-hi def link rstFieldList                    Function
-hi def link rstBibliographicField           Constant
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+hi def link rstCodeBlock                    String
 
 let b:current_syntax = "rst"
 
